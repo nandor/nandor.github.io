@@ -62,7 +62,6 @@
         stroke: #7A859F;
       }
 
-
       path.line0 {
         stroke: #58508d;
       }
@@ -92,12 +91,21 @@
         stroke: black;
         fill: #ffa600;
       }
+
+      #search {
+        float: right;
+      }
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.17/d3.min.js"></script>
   </head>
   <body>
     <div class="page">
-      <h1>GenM Benchmarks</h1>
+      <div id="search">
+        <input type="search" autocomplete="off"/>
+      </div>
+      <div>
+        <h1>GenM Benchmarks</h1>
+      </div>
       <div>
         <h2>Performance</h2>
         <div id="perf">
@@ -122,6 +130,7 @@
       function DrawPerf(key, data) {
         const elem = document.createElement("div");
         elem.setAttribute("data-id", key);
+        elem.setAttribute("class", "search-item");
 
         var title = document.createElement("div");
         title.className = "title";
@@ -233,6 +242,18 @@
         for (const key of Object.keys(perf_data)) {
           DrawPerf(key, perf_data[key]);
         }
+      });
+
+      document.querySelector('#search input').addEventListener('keyup', e => {
+        const query = e.target.value;
+        document.querySelectorAll('.search-item').forEach(item => {
+          const matches = !query || item.getAttribute("data-id").includes(e.target.value);
+          if (matches) {
+            item.style.display = '';
+          } else {
+            item.style.display = 'none';
+          }
+        });
       });
     </script>
   </body>
