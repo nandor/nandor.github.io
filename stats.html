@@ -154,12 +154,12 @@
         document.querySelector("#perf").appendChild(elem);
 
         // SVG container.
-        var svg = d3.select("#perf > div[data-id='" + key + "'] > .plot")
+        var parent = d3.select("#perf > div[data-id='" + key + "'] > .plot")
           .append("svg")
             .attr("width", 980)
-            .attr("height", 200)
-          .append("g")
-            .attr("transform", "translate(40, 10)");
+            .attr("height", 200);
+        var rect = parent.append("rect").attr("width", "100%").attr("height", "100%");
+        var svg = parent.append("g").attr("transform", "translate(40, 10)");
 
         var yScale = d3.scale.linear().domain([0, 2]).range([180, 0]);
         var xScale = d3.scale.linear().domain([-1, VERSIONS.length]).range([0, 940]);
@@ -176,9 +176,18 @@
             .attr("x2", xScale(VERSIONS.length)).attr("y2", yScale(1));
 
         // Plot a line for each genm version.
+        var better = 0, worse = 0;
         for (const i in SERIES) {
           const sw = SERIES[i];
           const clazz = "line" + i;
+
+          const last = data[sw][data[sw].length - 1];
+          if (last > 1.001) {
+            better += 1;
+          } else if (last < 0.999) {
+            worse += 1;
+          }
+
           svg
             .append("path")
             .datum(data[sw])
@@ -196,6 +205,14 @@
               .attr("r", 3)
               .attr("cx", (s, i) => xScale(i))
               .attr("cy", yScale);
+        }
+
+        if (worse == SERIES.length) {
+          rect.attr("fill", "#ff6961");
+        } else if (better == SERIES.length) {
+          rect.attr("fill", "#77dd77");
+        } else {
+          rect.attr("fill", "#ffb861");
         }
       }
 
