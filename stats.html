@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8"/>
+    <style type="text/css">
+      body {
+        background-color: #212733;
+        color: #647E7C;
+      }
+
+      body h2, body h1 {
+        color: #426A87;
+      }
+
+      .page {
+        width: 1200px;
+        margin-left: auto;
+        margin-right: auto;
+        font-family: Helvetica;
+      }
+
+      .page > div > div {
+        background-color: #313743;
+      }
+
+      #size, #perf {
+        padding: 10px;
+      }
+
+      #size > div, #perf > div {
+        height: 200px;
+      }
+
+      .title, .title {
+        padding-top: 90px;
+        font-size: 16px;
+        width: 200px;
+        height: 110px;
+        float: left;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .plot, .plot {
+        height: 200px;
+        width: 980px;
+        float: left;
+      }
+
+      svg text {
+        fill: #E0E3DA;
+      }
+
+      .y.axis line,
+      .y.axis path {
+        fill: none;
+        stroke: #7A859F;
+      }
+
+      line.x.axis {
+        fill: none;
+        stroke: #7A859F;
+      }
+
+
+      path.line0 {
+        stroke: #58508d;
+      }
+      path.line1 {
+        stroke: #bc5090;
+      }
+      path.line2 {
+        stroke: #ff6361;
+      }
+      path.line3 {
+        stroke: #ffa600;
+      }
+
+      circle.line0 {
+        stroke: black;
+        fill: #58508d;
+      }
+      circle.line1 {
+        stroke: black;
+        fill: #bc5090;
+      }
+      circle.line2 {
+        stroke: black;
+        fill: #ff6361;
+      }
+      circle.line3 {
+        stroke: black;
+        fill: #ffa600;
+      }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.17/d3.min.js"></script>
+  </head>
+  <body>
+    <div class="page">
+      <h1>GenM Benchmarks</h1>
+      <div>
+        <h2>Performance</h2>
+        <div id="perf">
+        </div>
+      </div>
+    </div>
+
+    <script>
+      var REFERENCE = "4.07.1+static";
+
+      var SERIES = [
+        "4.07.1+genm+O0",
+        "4.07.1+genm+O1",
+        "4.07.1+genm+O2",
+        "4.07.1+genm+O3",
+      ];
+      const VERSIONS = [
+        '00000',
+      ];
+
+
+      function DrawPerf(key, data) {
+        const elem = document.createElement("div");
+        elem.setAttribute("data-id", key);
+
+        var title = document.createElement("div");
+        title.className = "title";
+        title.innerHTML = key;
+        elem.appendChild(title);
+
+        var plot = document.createElement("div");
+        plot.className = "plot";
+        elem.appendChild(plot);
+
+        document.querySelector("#perf").appendChild(elem);
+
+        // SVG container.
+        var svg = d3.select("#perf > div[data-id='" + key + "'] > .plot")
+          .append("svg")
+            .attr("width", 980)
+            .attr("height", 200)
+          .append("g")
+            .attr("transform", "translate(40, 10)");
+
+        var yScale = d3.scale.linear().domain([0, 2]).range([180, 0]);
+        var xScale = d3.scale.linear().domain([-1, VERSIONS.length]).range([0, 940]);
+
+        // Y axis.
+        svg.append("g")
+            .attr("class", "y axis")
+            .call(d3.svg.axis().scale(yScale).orient("left").ticks(4));
+
+        // Horizontal line.
+        svg.append("line")
+            .attr("class", "x axis")
+            .attr("x1", xScale(-1)).attr("y1", yScale(1))
+            .attr("x2", xScale(VERSIONS.length)).attr("y2", yScale(1));
+
+        // Plot a line for each genm version.
+        for (const i in SERIES) {
+          const sw = SERIES[i];
+          const clazz = "line" + i;
+          svg
+            .append("path")
+            .datum(data[sw])
+            .attr("class", clazz)
+            .attr("d", d3.svg.line()
+              .x((s, i) => xScale(i))
+              .y(yScale)
+            );
+
+          svg.selectAll("dot")
+            .data(data[sw])
+            .enter()
+              .append("circle")
+              .attr("class", clazz)
+              .attr("r", 3)
+              .attr("cx", (s, i) => xScale(i))
+              .attr("cy", yScale);
+        }
+      }
+
+      Promise.all(VERSIONS.map(v => fetch('benchmark/perf.' + v).then(r => r.json()))).then(data => {
+        const keys = new Set();
+        for (const version of data) {
+          for (const key of Object.keys(version)) {
+            keys.add(key);
+          }
+        }
+
+        var perf_data = {};
+        function LoadPerf(key, data) {
+          const avgs = {}, stds = {};
+          for (var sw of Object.keys(data)) {
+            var n = data[sw].length;
+            var xs = 0.0;
+            for (var elem of data[sw]) {
+              xs += elem[0];
+            }
+            var avg = xs / n;
+            var xs2 = 0.0;
+            for (var elem of data[sw]) {
+              xs2 += (elem[0] - avg) * (elem[0] - avg);
+            }
+            var std = Math.sqrt(xs2 / (n - 1));
+
+            avgs[sw] = avg;
+            stds[sw] = std;
+          }
+
+          const key_series = (perf_data[key] = perf_data[key] || {});
+          for (const sw of SERIES) {
+            const series = (key_series[sw] = key_series[sw] || []);
+            series.push(avgs[sw] / avgs[REFERENCE]);
+          }
+        }
+
+        for (const version in data) {
+          for (key of keys) {
+            var d = data[version][key];
+            if (!d) {
+              console.error('missing ', key);
+            } else if (Object.keys(d).length == 1) {
+              LoadPerf(key, d[Object.keys(d)[0]]);
+            } else {
+              for (const args of Object.keys(d)) {
+                LoadPerf(key + '.' + args, d[args]);
+              }
+            }
+          }
+        }
+
+        for (const key of Object.keys(perf_data)) {
+          DrawPerf(key, perf_data[key]);
+        }
+      });
+    </script>
+  </body>
+</html>
