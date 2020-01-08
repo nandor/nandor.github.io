@@ -8,7 +8,7 @@
         color: #647E7C;
       }
 
-      body h2, body h1 {
+      body h2, body h1, body h3 {
         color: #426A87;
       }
 
@@ -23,28 +23,18 @@
         background-color: #313743;
       }
 
-      #size, #perf {
-        padding: 10px;
-      }
-
-      #size > div, #perf > div {
-        height: 200px;
-      }
-
-      .title, .title {
-        padding-top: 90px;
-        font-size: 16px;
-        width: 200px;
-        height: 110px;
-        float: left;
+      .title {
+        padding-top: 15px;
+        padding-bottom: 15px;
+        font-size: 20px;
+        text-align: center;
         overflow: hidden;
         text-overflow: ellipsis;
       }
 
-      .plot, .plot {
+      .plot {
         height: 200px;
-        width: 980px;
-        float: left;
+        width: 1180px;
       }
 
       svg text {
@@ -96,14 +86,25 @@
         float: right;
       }
 
-      .search-item {
-        border-top: 1px solid #212733;
-        padding-top: 10px;
-        padding-bottom: 10px;
-      }
-
       .search-item:first-child {
         border-top: none;
+      }
+
+      span.tab {
+        cursor: pointer;
+      }
+
+      span.tab[data-selected="1"] {
+        font-size: 24px;
+      }
+
+      div.tab {
+        padding: 10px;
+        display: none;
+      }
+
+      div.tab[data-selected="1"] {
+        display: block;
       }
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.17/d3.min.js"></script>
@@ -117,27 +118,53 @@
         <h1>GenM Benchmarks</h1>
       </div>
       <div>
-        <h2>Performance</h2>
-        <div id="perf">
-        </div>
+        <h3>
+          <span class="tab macro" onclick="select('macro')">Macro</span>
+          <span class="tab micro" onclick="select('micro')">Micro</span>
+          <span class="tab size" onclick="select('size')">Size</span>
+        </h3>
+        <div class="tab macro" id="macro"></div>
+        <div class="tab micro" id="micro"></div>
+        <div class="tab size" id="size"></div>
       </div>
     </div>
 
     <script>
+      function select(tab) {
+        document.querySelectorAll(".tab").forEach(item => {
+          item.removeAttribute("data-selected");
+        });
+        document.querySelectorAll(".tab." + tab).forEach(item => {
+          item.setAttribute("data-selected", "1");
+        });
+      }
+      select("macro");
+
+      document.querySelector('#search input').addEventListener('keyup', e => {
+        const query = e.target.value;
+        document.querySelectorAll('.search-item').forEach(item => {
+          const matches = !query || item.getAttribute("data-id").includes(e.target.value);
+          if (matches) {
+            item.style.display = '';
+          } else {
+            item.style.display = 'none';
+          }
+        });
+      });
+
       var REFERENCE = "4.07.1+static";
 
       var SERIES = [
         "4.07.1+genm+O0",
-        "4.07.1+genm+O1",
-        "4.07.1+genm+O2",
-        "4.07.1+genm+O3",
+        //"4.07.1+genm+O1",
+        //"4.07.1+genm+O2",
+        //"4.07.1+genm+O3",
       ];
       const VERSIONS = [
         '00000',
       ];
 
-
-      function DrawPerf(key, data) {
+      function DrawPerf(container, key, data) {
         const elem = document.createElement("div");
         elem.setAttribute("data-id", key);
         elem.setAttribute("class", "search-item");
@@ -151,18 +178,18 @@
         plot.className = "plot";
         elem.appendChild(plot);
 
-        document.querySelector("#perf").appendChild(elem);
-
+        document.querySelector(container).appendChild(elem);
+        const WIDTH = 1180;
         // SVG container.
-        var parent = d3.select("#perf > div[data-id='" + key + "'] > .plot")
+        var parent = d3.select(container + " > div[data-id='" + key + "'] > .plot")
           .append("svg")
-            .attr("width", 980)
+            .attr("width", WIDTH)
             .attr("height", 200);
         var rect = parent.append("rect").attr("width", "100%").attr("height", "100%");
         var svg = parent.append("g").attr("transform", "translate(40, 10)");
 
         var yScale = d3.scale.linear().domain([0, 2]).range([180, 0]);
-        var xScale = d3.scale.linear().domain([-1, VERSIONS.length]).range([0, 940]);
+        var xScale = d3.scale.linear().domain([-1, VERSIONS.length]).range([0, WIDTH - 40]);
 
         // Y axis.
         svg.append("g")
@@ -216,72 +243,66 @@
         }
       }
 
-      Promise.all(VERSIONS.map(v => fetch('benchmark/perf.' + v).then(r => r.json()))).then(data => {
-        const keys = new Set();
-        for (const version of data) {
-          for (const key of Object.keys(version)) {
-            keys.add(key);
-          }
-        }
-
-        var perf_data = {};
-        function LoadPerf(key, data) {
-          const avgs = {}, stds = {};
-          for (var sw of Object.keys(data)) {
-            var n = data[sw].length;
-            var xs = 0.0;
-            for (var elem of data[sw]) {
-              xs += elem[0];
+      function LoadBenchmark(container, bench) {
+        Promise.all(VERSIONS.map(v => fetch('benchmark/' + bench + '.' + v).then(r => r.json()))).then(data => {
+          const keys = new Set();
+          for (const version of data) {
+            for (const key of Object.keys(version)) {
+              keys.add(key);
             }
-            var avg = xs / n;
-            var xs2 = 0.0;
-            for (var elem of data[sw]) {
-              xs2 += (elem[0] - avg) * (elem[0] - avg);
-            }
-            var std = Math.sqrt(xs2 / (n - 1));
-
-            avgs[sw] = avg;
-            stds[sw] = std;
           }
 
-          const key_series = (perf_data[key] = perf_data[key] || {});
-          for (const sw of SERIES) {
-            const series = (key_series[sw] = key_series[sw] || []);
-            series.push(avgs[sw] / avgs[REFERENCE]);
-          }
-        }
+          var perf_data = {};
+          function LoadPerf(key, data) {
+            const avgs = {}, stds = {};
+            for (var sw of Object.keys(data)) {
+              if (bench == "macro") {
+                var n = data[sw].length;
+                var xs = 0.0;
+                for (var elem of data[sw]) {
+                  xs += elem[0];
+                }
+                var avg = xs / n;
+                var xs2 = 0.0;
+                for (var elem of data[sw]) {
+                  xs2 += (elem[0] - avg) * (elem[0] - avg);
+                }
+                var std = Math.sqrt(xs2 / (n - 1));
 
-        for (const version in data) {
-          for (key of keys) {
-            var d = data[version][key];
-            if (!d) {
-              console.error('missing ', key);
-            } else if (Object.keys(d).length == 1) {
-              LoadPerf(key, d[Object.keys(d)[0]]);
-            } else {
-              for (const args of Object.keys(d)) {
-                LoadPerf(key + '.' + args, d[args]);
+                avgs[sw] = avg;
+                stds[sw] = std;
+              } else if (bench == "size") {
+                avgs[sw] = data[sw];
+                stds[sw] = 0;
+              } else if (bench == "micro") {
+                avgs[sw] = data[sw];
+                stds[sw] = 0;
               }
             }
+
+            const key_series = (perf_data[key] = perf_data[key] || {});
+            for (const sw of SERIES) {
+              const series = (key_series[sw] = key_series[sw] || []);
+              const ref = avgs[REFERENCE];
+              series.push(ref == 0.0 ? 1.0 : (avgs[sw] / ref));
+            }
           }
-        }
 
-        for (const key of Object.keys(perf_data)) {
-          DrawPerf(key, perf_data[key]);
-        }
-      });
+          for (const version in data) {
+            for (const key of keys) {
+              LoadPerf(key, data[version][key]);
+            }
+          }
 
-      document.querySelector('#search input').addEventListener('keyup', e => {
-        const query = e.target.value;
-        document.querySelectorAll('.search-item').forEach(item => {
-          const matches = !query || item.getAttribute("data-id").includes(e.target.value);
-          if (matches) {
-            item.style.display = '';
-          } else {
-            item.style.display = 'none';
+          for (const key of Object.keys(perf_data)) {
+            DrawPerf(container, key, perf_data[key]);
           }
         });
-      });
+      }
+
+      LoadBenchmark("#macro", "macro");
+      LoadBenchmark("#micro", "micro");
+      LoadBenchmark("#size", "size");
     </script>
   </body>
 </html>
