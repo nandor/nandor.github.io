@@ -54,15 +54,19 @@
 
       path.line0 {
         stroke: #58508d;
+        fill: none;
       }
       path.line1 {
         stroke: #bc5090;
+        fill: none;
       }
       path.line2 {
         stroke: #ff6361;
+        fill: none;
       }
       path.line3 {
         stroke: #ffa600;
+        fill: none;
       }
 
       circle.line0 {
@@ -156,12 +160,14 @@
 
       var SERIES = [
         "4.07.1+genm+O0",
-        //"4.07.1+genm+O1",
-        //"4.07.1+genm+O2",
-        //"4.07.1+genm+O3",
+        "4.07.1+genm+O1",
+        "4.07.1+genm+O2",
+        "4.07.1+genm+O3",
       ];
       const VERSIONS = [
         '00000',
+        '00001',
+        '00002',
       ];
 
       function DrawPerf(container, key, data) {
@@ -208,7 +214,7 @@
           const sw = SERIES[i];
           const clazz = "line" + i;
 
-          const last = data[sw][data[sw].length - 1];
+          const last = data[sw][data[sw].length - 1][1];
           if (last > 1.001) {
             worse += 1;
           } else if (last < 0.999) {
@@ -220,8 +226,8 @@
             .datum(data[sw])
             .attr("class", clazz)
             .attr("d", d3.svg.line()
-              .x((s, i) => xScale(i))
-              .y(yScale)
+              .x(s => xScale(s[0]))
+              .y(s => yScale(s[1]))
             );
 
           svg.selectAll("dot")
@@ -230,8 +236,8 @@
               .append("circle")
               .attr("class", clazz)
               .attr("r", 3)
-              .attr("cx", (s, i) => xScale(i))
-              .attr("cy", yScale);
+              .attr("cx", s => xScale(s[0]))
+              .attr("cy", s => yScale(s[1]));
         }
 
         if (worse == SERIES.length) {
@@ -253,30 +259,32 @@
           }
 
           var perf_data = {};
-          function LoadPerf(key, data) {
+          function LoadPerf(key, version, data) {
             const avgs = {}, stds = {};
-            for (var sw of Object.keys(data)) {
-              if (bench == "macro") {
-                var n = data[sw].length;
-                var xs = 0.0;
-                for (var elem of data[sw]) {
-                  xs += elem[0];
-                }
-                var avg = xs / n;
-                var xs2 = 0.0;
-                for (var elem of data[sw]) {
-                  xs2 += (elem[0] - avg) * (elem[0] - avg);
-                }
-                var std = Math.sqrt(xs2 / (n - 1));
+            if (data) {
+              for (var sw of Object.keys(data)) {
+                if (bench == "macro") {
+                  var n = data[sw].length;
+                  var xs = 0.0;
+                  for (var elem of data[sw]) {
+                    xs += elem[0];
+                  }
+                  var avg = xs / n;
+                  var xs2 = 0.0;
+                  for (var elem of data[sw]) {
+                    xs2 += (elem[0] - avg) * (elem[0] - avg);
+                  }
+                  var std = Math.sqrt(xs2 / (n - 1));
 
-                avgs[sw] = avg;
-                stds[sw] = std;
-              } else if (bench == "size") {
-                avgs[sw] = data[sw];
-                stds[sw] = 0;
-              } else if (bench == "micro") {
-                avgs[sw] = data[sw];
-                stds[sw] = 0;
+                  avgs[sw] = avg;
+                  stds[sw] = std;
+                } else if (bench == "size") {
+                  avgs[sw] = data[sw];
+                  stds[sw] = 0;
+                } else if (bench == "micro") {
+                  avgs[sw] = data[sw];
+                  stds[sw] = 0;
+                }
               }
             }
 
@@ -284,13 +292,15 @@
             for (const sw of SERIES) {
               const series = (key_series[sw] = key_series[sw] || []);
               const ref = avgs[REFERENCE];
-              series.push(ref == 0.0 ? 1.0 : (avgs[sw] / ref));
+              if (REFERENCE in avgs && sw in avgs) {
+                series.push([version, ref == 0.0 ? 1.0 : (avgs[sw] / ref)]);
+              }
             }
           }
 
           for (const version in data) {
             for (const key of keys) {
-              LoadPerf(key, data[version][key]);
+              LoadPerf(key, version, data[version][key]);
             }
           }
 
