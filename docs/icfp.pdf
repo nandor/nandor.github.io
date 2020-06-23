@@ -1,0 +1,152 @@
+\documentclass[acmsmall,screen]{acmart}
+
+\usepackage{graphicx}
+\usepackage{wrapfig}
+\usepackage{fancyvrb}
+\usepackage{prftree}
+\usepackage{amsmath}
+\usepackage{setspace}
+\usepackage{listings}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{makecell}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{algorithm}
+\usepackage[noend]{algpseudocode}
+\usepackage{array}
+\usepackage{blindtext}
+\usepackage{numprint}
+\usepackage{pgfplots}
+\usepackage{pgfplotstable}
+\usepackage{multirow}
+\usepackage{makecell}
+\usepackage{longtable}
+\usepackage{relsize}
+\usepgfplotslibrary{statistics}
+
+\setlength{\intextsep}{0pt}
+\setlength{\textfloatsep}{0pt}
+
+\pgfplotsset{compat = 1.3}
+
+\npthousandsep{\,}
+
+\newcommand{\Csh}{C\#\space}
+\newcommand{\Fsh}{F\#\space}
+
+\definecolor{BrickRed}{rgb}{0.71, 0.19, 0.10}
+\definecolor{RoyalBlue}{rgb}{0.0, 0.44, 0.73}
+\definecolor{OliveGreen}{rgb}{0.23, 0.5, 0.19}
+\definecolor{BurntOrange}{rgb}{0.96, 0.57, 0.11}
+\definecolor{PineGreen}{rgb}{0.0, 0.47, 0.44}
+\definecolor{DeepPink}{rgb}{1,.08,.576}
+\definecolor{BlueGray}{rgb}{0.4, 0.6, 0.8}
+
+\newcommand{\sym}[1]{\textcolor{BrickRed}{#1}}
+\newcommand{\kwd}[1]{\textcolor{RoyalBlue}{#1}}
+\newcommand{\dir}[1]{\textcolor{gray}{#1}}
+\newcommand{\grn}[1]{\textcolor{OliveGreen}{#1}}
+\newcommand{\com}[1]{\textcolor{BurntOrange}{#1}}
+\newcommand{\red}[1]{\textcolor{red}{#1}}
+\newcommand{\ann}[1]{\textcolor{PineGreen}{#1}}
+\newcommand{\reg}[1]{\textcolor{BlueGray}{#1}}
+
+\newcommand{\tim}[1]{\textcolor{DeepPink}{\textbf{Tim: #1}}}
+
+\pgfplotscreateplotcyclelist{custom}{
+    teal,               every mark/.append style={fill=teal!80!black},  mark=*\\
+    purple,             every mark/.append style={fill=orange!80!black},mark=square*\\
+    cyan!60!black,      every mark/.append style={fill=cyan!80!black},  mark=otimes*\\
+    yellow!60!black,    every mark/.append style={solid,fill=yellow!80!black},mark=square*\\
+    red!70!white,       mark=star\\
+    RoyalBlue,          every mark/.append style={solid,fill=red!80!black},mark=*\\
+    lime!80!black,      every mark/.append style={fill=lime},mark=diamond*\\
+    BrickRed,           every mark/.append style={solid,fill=gray},mark=otimes*\\
+    orange,             mark=star,every mark/.append style=solid\\
+}
+
+
+%% Journal info.
+\acmJournal{PACMPL}
+\acmVolume{1}
+\acmNumber{ICFP}
+\acmArticle{1}
+\acmYear{2020}
+\acmMonth{1}
+\acmDOI{}
+\startPage{1}
+
+%% Copyright info.
+\setcopyright{none}
+
+%% Citation info.
+\bibliographystyle{ACM-Reference-Format}
+\citestyle{acmauthoryear}
+
+\begin{document}
+
+\title{Duplo: A Framework for OCaml Post-Link Optimisation}
+
+\author{Nandor Licker}
+\email{nl364@cl.cam.ac.uk}
+\affiliation{%
+  \institution{University of Cambridge}
+  \country{United Kingdom}
+}
+
+\author{Timothy M. Jones}
+\email{tmj32@cl.cam.ac.uk}
+\affiliation{%
+  \institution{University of Cambridge}
+  \country{United Kingdom}
+}
+
+\renewcommand{\shortauthors}{Licker and Jones}
+
+\input{sections/00_abstract.tex}
+
+\begin{CCSXML}
+<ccs2012>
+<concept>
+<concept_id>10011007.10011006.10011041</concept_id>
+<concept_desc>Software and its engineering~Compilers</concept_desc>
+<concept_significance>500</concept_significance>
+</concept>
+<concept>
+<concept_id>10011007.10011006.10011008.10011009.10011010</concept_id>
+<concept_desc>Software and its engineering~Imperative languages</concept_desc>
+<concept_significance>300</concept_significance>
+</concept>
+<concept>
+<concept_id>10011007.10011006.10011008.10011009.10011012</concept_id>
+<concept_desc>Software and its engineering~Functional languages</concept_desc>
+<concept_significance>300</concept_significance>
+</concept>
+</ccs2012>
+\end{CCSXML}
+
+\ccsdesc[500]{Software and its engineering~Compilers}
+\ccsdesc[300]{Software and its engineering~Imperative languages}
+\ccsdesc[300]{Software and its engineering~Functional languages}
+
+
+\keywords{OCaml, C, post-link, optimisation, inlining, LLVM}
+
+\maketitle
+
+\input{sections/01_introduction.tex}  % DONE
+\input{sections/02_background.tex}    % DONE
+\input{sections/03_optimiser.tex}     % DONE
+\input{sections/04_inlining.tex}      % DONE
+\input{sections/06_unreachable.tex}   % DONE
+\input{sections/60_local.tex}         % DONE
+\input{sections/65_opt.tex}           % DONE
+\input{sections/70_results.tex}       % DONE
+\input{sections/90_conclusion.tex}    % DONE
+
+\newpage
+\bibliography{bibliography}
+
+\end{document}
+\endinput
